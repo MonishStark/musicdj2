@@ -37,9 +37,9 @@ def install_package(package):
     try:
         subprocess.check_call(
             [sys.executable, "-m", "pip", "install", package])
-        logger.info(f"Successfully installed {package}")
+        logger.info("Successfully installed %s", package)
     except Exception as e:
-        logger.error(f"Failed to install {package}: {str(e)}")
+        logger.error("Failed to install %s: %s", package, str(e))
         raise
 
 
@@ -59,7 +59,7 @@ except ImportError:
 
 
 def detect_tempo_and_beats(audio_path, method="auto"):
-    logger.info(f"Detecting tempo and beats using {method} method")
+    logger.info("Detecting tempo and beats using %s method", method)
 
     if method in ("librosa", "auto"):
         try:
@@ -69,14 +69,14 @@ def detect_tempo_and_beats(audio_path, method="auto"):
 
             if len(beats) > 0 and tempo > 0:
                 logger.info(
-                    f"Librosa detected tempo: {tempo} BPM with {len(beats)} beats")
+                    "Librosa detected tempo: %s BPM with %s beats", tempo, len(beats))
                 return tempo, beat_times
             elif method == "librosa":
                 logger.warning(
                     "Librosa beat detection failed, but was explicitly requested")
                 return None, None
         except Exception as e:
-            logger.error(f"Error in librosa beat detection: {str(e)}")
+            logger.error("Error in librosa beat detection: %s", str(e))
             if method == "librosa":
                 return None, None
 
@@ -91,10 +91,10 @@ def detect_tempo_and_beats(audio_path, method="auto"):
             tempo = tempo_proc[0][0]
 
             logger.info(
-                f"Madmom detected tempo: {tempo} BPM with {len(beats)} beats")
+                "Madmom detected tempo: %s BPM with %s beats", tempo, len(beats))
             return tempo, beats
         except Exception as e:
-            logger.error(f"Error in madmom beat detection: {str(e)}")
+            logger.error("Error in madmom beat detection: %s", str(e))
 
     logger.warning("Beat detection failed with all methods")
     return None, None
@@ -121,13 +121,13 @@ def separate_audio_components(audio_path, output_dir):
         for component, path in components.items():
             if not os.path.exists(path):
                 logger.warning(
-                    f"Component {component} file not found at {path}")
+                    "Component %s file not found at %s", component, path)
 
         logger.info("Audio separation completed successfully")
         return [components, main_song]
 
     except Exception as e:
-        logger.error(f"Error during audio separation: {str(e)}")
+        logger.error("Error during audio separation: %s", str(e))
         return None
 
 
@@ -153,7 +153,7 @@ def pick_loudest_bars(stem, beats_ms, bars=4, beats_per_bar=4):
 
 def create_extended_mix(components, output_path, intro_bars, outro_bars, _preserve_vocals, _tempo, beat_times, main_song):
     logger.info(
-        f"Creating extended mix with {intro_bars} bars intro and {outro_bars} bars outro")
+        "Creating extended mix with %s bars intro and %s bars outro", intro_bars, outro_bars)
 
     try:
         beats_per_bar = 4
@@ -162,14 +162,14 @@ def create_extended_mix(components, output_path, intro_bars, outro_bars, _preser
 
         if len(beat_times) < (intro_beats + outro_beats + 8):
             logger.warning(
-                f"Not enough beats detected ({len(beat_times)}) for requested extension")
+                "Not enough beats detected (%s) for requested extension", len(beat_times))
             return False
 
         version = 1
         if "_v" in output_path:
             try:
                 version = int(output_path.split("_v")[-1].split(".")[0])
-            except:
+            except (ValueError, IndexError):
                 pass
 
         drums = AudioSegment.from_file(components['drums'])
@@ -206,7 +206,7 @@ def create_extended_mix(components, output_path, intro_bars, outro_bars, _preser
         extended_mix.export(
             output_path, format=os.path.splitext(output_path)[1][1:])
         logger.info(
-            f"Extended mix created successfully and saved to {output_path}")
+            "Extended mix created successfully and saved to %s", output_path)
 
         output_base = os.path.splitext(os.path.basename(output_path))[0]
         save_dir = r"C:\Users\Dhanush\Desktop\softwareLabs"
@@ -220,19 +220,20 @@ def create_extended_mix(components, output_path, intro_bars, outro_bars, _preser
         with open(shuffle_json_path, 'w') as f:
             json.dump(shuffle_info, f, indent=2)
 
-        logger.info(f"Shuffle order saved to {shuffle_json_path}")
+        logger.info("Shuffle order saved to %s", shuffle_json_path)
         return True
 
     except Exception as e:
-        logger.error(f"Error in create_extended_mix: {str(e)}")
+        logger.error("Error in create_extended_mix: %s", str(e))
         return False
 
 
 def process_audio(input_path, output_path, intro_bars=16, outro_bars=16, preserve_vocals=True, beat_detection="auto"):
 
-    logger.info(f"Starting audio processing: {input_path}")
+    logger.info("Starting audio processing: %s", input_path)
     logger.info(
-        f"Parameters: intro_bars={intro_bars}, outro_bars={outro_bars}, preserve_vocals={preserve_vocals}, beat_detection={beat_detection}")
+        "Parameters: intro_bars=%s, outro_bars=%s, preserve_vocals=%s, beat_detection=%s", 
+        intro_bars, outro_bars, preserve_vocals, beat_detection)
 
     try:
 
@@ -268,7 +269,7 @@ def process_audio(input_path, output_path, intro_bars=16, outro_bars=16, preserv
             return success
 
     except Exception as e:
-        logger.error(f"Error in audio processing: {str(e)}")
+        logger.error("Error in audio processing: %s", str(e))
         return False
 
 

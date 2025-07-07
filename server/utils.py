@@ -67,7 +67,7 @@ def detect_key(audio_array, sample_rate):
 
 
 def analyze_audio_file(file_path):
-    logger.info(f"Analyzing audio file: {file_path}")
+    logger.info("Analyzing audio file: %s", file_path)
 
     try:
         logger.info("Starting audio analysis...")
@@ -90,11 +90,11 @@ def analyze_audio_file(file_path):
             "bitrate": bitrate
         }
 
-        logger.info(f"Successfully analyzed audio file: {info}")
+        logger.info("Successfully analyzed audio file: %s", info)
         return info
 
     except Exception as error:
-        logger.error(f"Error analyzing audio file: {str(error)}")
+        logger.error("Error analyzing audio file: %s", str(error))
         return fallback_audio_analysis(file_path)
 
 
@@ -112,7 +112,7 @@ def fallback_audio_analysis(file_path):
         }
 
     except Exception as error:
-        logger.error(f"Fallback analysis failed: {str(error)}")
+        logger.error("Fallback analysis failed: %s", str(error))
 
         return {
             "format": get_audio_format(file_path),
