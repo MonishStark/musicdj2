@@ -235,7 +235,9 @@ const ProcessingInfo: React.FC<ProcessingInfoProps> = ({
 					<h4 className='font-medium text-sm mb-2'>Processing Steps:</h4>
 					<ul className='space-y-2 text-sm'>
 						{processingState.steps.map((step, index) => (
-							<li key={index} className='flex items-center'>
+							<li
+								key={`step-${step.text}-${index}`}
+								className='flex items-center'>
 								{renderStepIcon(step.status)}
 								<span
 									className={step.status === "pending" ? "text-gray-400" : ""}>

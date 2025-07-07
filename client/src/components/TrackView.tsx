@@ -35,7 +35,7 @@ const TrackView: React.FC<TrackViewProps> = ({ track, type, version }) => {
 			: `${track.originalFilename.replace(/\.[^/.]+$/, "")} (Extended Mix v${
 					version + 1
 			  })${track.originalFilename.match(/\.[^/.]+$/)?.[0] || ""}`;
-	
+
 	const displayDuration =
 		type === "original"
 			? track.duration || 0
@@ -337,7 +337,7 @@ const TrackView: React.FC<TrackViewProps> = ({ track, type, version }) => {
 
 										return (
 											<div
-												key={i}
+												key={`waveform-bar-${i}`}
 												className={
 													"waveform-bar transition-colors duration-300"
 												}
@@ -426,7 +426,11 @@ const TrackView: React.FC<TrackViewProps> = ({ track, type, version }) => {
 					</div>
 					<div className='grid grid-cols-1 gap-6'>
 						{(track.extendedPaths || []).map((path, idx) => (
-							<VersionPlayer key={idx} track={track} version={idx} />
+							<VersionPlayer
+								key={`${track.id}-version-${idx}`}
+								track={track}
+								version={idx}
+							/>
 						))}
 						{(track.extendedPaths?.length || 0) < 3 && (
 							<div>

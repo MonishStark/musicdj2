@@ -115,7 +115,7 @@ const VersionPlayer: React.FC<VersionPlayerProps> = ({ track, version }) => {
 								const isCurrentlyPlaying = i / 150 <= currentTime / duration;
 								return (
 									<div
-										key={i}
+										key={`version-${version}-waveform-${i}`}
 										className='waveform-bar transition-colors duration-300'
 										style={{
 											height: `${Math.floor(Math.random() * 70 + 10)}px`,
