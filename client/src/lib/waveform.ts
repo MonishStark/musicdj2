@@ -77,7 +77,7 @@ export function generateRandomWaveform(options: WaveformOptions): void {
 /**
  * Update progress on a simple waveform
  */
-export function updateWaveformProgress(container: HTMLElement, progress: number, progressColor: string = '#6366F1'): void {
+export function updateWaveformProgress(container: HTMLElement, progress: number, progressColor = '#6366F1'): void {
   const bars = container.children;
   const progressIndex = Math.floor(bars.length * progress);
   

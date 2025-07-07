@@ -24,7 +24,7 @@ export function formatDuration(seconds: number): string {
  * @param beats Number of beats
  * @param timeSignature Time signature (e.g., 4 for 4/4)
  */
-export function calculateBars(beats: number, timeSignature: number = 4): number {
+export function calculateBars(beats: number, timeSignature = 4): number {
   return Math.floor(beats / timeSignature);
 }
 
@@ -34,7 +34,7 @@ export function calculateBars(beats: number, timeSignature: number = 4): number 
  * @param bars Number of bars
  * @param timeSignature Time signature (e.g., 4 for 4/4)
  */
-export function calculateDurationFromBars(bpm: number, bars: number, timeSignature: number = 4): number {
+export function calculateDurationFromBars(bpm: number, bars: number, timeSignature = 4): number {
   // Duration = (bars * timeSignature * 60) / BPM
   return (bars * timeSignature * 60) / bpm;
 }
@@ -50,6 +50,6 @@ export function isSupportedFormat(format: string): boolean {
 /**
  * Check if a file size is within upload limits
  */
-export function isWithinSizeLimit(sizeInBytes: number, maxSizeMB: number = 15): boolean {
+export function isWithinSizeLimit(sizeInBytes: number, maxSizeMB = 15): boolean {
   return sizeInBytes <= maxSizeMB * 1024 * 1024;
 }
