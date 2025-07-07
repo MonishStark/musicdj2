@@ -171,9 +171,9 @@ const Home: React.FC = () => {
 						</button>
 					)}
 
-					{isProcessing ? (
+					{isProcessing && currentTrackId ? (
 						<ProcessingInfo
-							trackId={currentTrackId!}
+							trackId={currentTrackId}
 							onComplete={handleProcessingComplete}
 							onCancel={handleProcessingCancel}
 						/>
