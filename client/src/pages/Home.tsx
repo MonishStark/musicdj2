@@ -87,7 +87,7 @@ const Home: React.FC = () => {
 
 	const { data: track } = useQuery<AudioTrack>({
 		queryKey: currentTrackId ? [`/api/tracks/${currentTrackId}`] : ["no-track"],
-		enabled: !!currentTrackId,
+		enabled: Boolean(currentTrackId),
 		refetchInterval: isProcessing ? 2000 : false,
 	});
 
