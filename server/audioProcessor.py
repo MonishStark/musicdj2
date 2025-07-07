@@ -61,7 +61,7 @@ except ImportError:
 def detect_tempo_and_beats(audio_path, method="auto"):
     logger.info(f"Detecting tempo and beats using {method} method")
 
-    if method == "librosa" or method == "auto":
+    if method in ("librosa", "auto"):
         try:
             y, sr = librosa.load(audio_path, sr=None)
             tempo, beats = librosa.beat.beat_track(y=y, sr=sr)
@@ -80,7 +80,7 @@ def detect_tempo_and_beats(audio_path, method="auto"):
             if method == "librosa":
                 return None, None
 
-    if method == "madmom" or method == "auto":
+    if method in ("madmom", "auto"):
         try:
             from madmom.features.beats import RNNBeatProcessor, BeatTrackingProcessor
             from madmom.features.tempo import TempoEstimationProcessor
