@@ -35,7 +35,7 @@ const TrackView: React.FC<TrackViewProps> = ({ track, type, version }) => {
 			: `${track.originalFilename.replace(/\.[^/.]+$/, "")} (Extended Mix v${
 					version + 1
 			  })${track.originalFilename.match(/\.[^/.]+$/)?.[0] || ""}`;
-	console.log(track);
+	
 	const displayDuration =
 		type === "original"
 			? track.duration || 0
