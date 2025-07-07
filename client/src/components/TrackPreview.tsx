@@ -20,7 +20,7 @@ const TrackPreview: React.FC<TrackPreviewProps> = ({
 
 	const { data: track, isLoading } = useQuery({
 		queryKey: trackId ? [`/api/tracks/${trackId}`] : ["no-track"],
-		enabled: !!trackId,
+		enabled: Boolean(trackId),
 	});
 
 	// Reset to original tab when track changes or initially loads
