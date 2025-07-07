@@ -181,7 +181,7 @@ def create_extended_mix(components, output_path, intro_bars, outro_bars, _preser
 
         full_intro_drums = pick_loudest_bars(
             drums, beat_times_ms, bars=intro_bars)
-        full_intro_bass = pick_loudest_bars(
+        _unused_full_intro_bass = pick_loudest_bars(
             bass, beat_times_ms, bars=intro_bars)
         full_intro_other = pick_loudest_bars(
             other, beat_times_ms, bars=intro_bars)
