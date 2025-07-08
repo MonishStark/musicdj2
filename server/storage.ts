@@ -9,12 +9,17 @@ import {
 	type InsertUser,
 	type AudioTrack,
 	type InsertAudioTrack,
-	type UpdateAudioTrackc,
+	type UpdateAudioTrack,
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
+// Ensure DATABASE_URL is defined
+if (!process.env.DATABASE_URL) {
+	throw new Error("DATABASE_URL environment variable is not defined");
+}
+
 const pool = new Pool({
-	connectionString: "postgresql://postgres:7372@localhost:5432/airemixer",
+	connectionString: process.env.DATABASE_URL,
 });
 
 const db = drizzle(pool);

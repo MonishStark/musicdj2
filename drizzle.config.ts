@@ -7,6 +7,6 @@ export default defineConfig({
 	schema: "./shared/schema.ts",
 	dialect: "postgresql",
 	dbCredentials: {
-		url: "postgresql://postgres:7372@localhost:5432/airemixer",
+		url: process.env.DATABASE_URL!,
 	},
 });
