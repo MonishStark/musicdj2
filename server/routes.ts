@@ -447,12 +447,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 			}
 		} catch (error) {
 			console.error("Stream audio error:", error);
-			return res
-				.status(500)
-				.json({
-					message: "Error streaming audio",
-					error: error instanceof Error ? error.message : "Unknown error",
-				});
+			return res.status(500).json({
+				message: "Error streaming audio",
+				error: error instanceof Error ? error.message : "Unknown error",
+			});
 		}
 	});
 
@@ -512,12 +510,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 			res.download(filePath, downloadFilename);
 		} catch (error) {
 			console.error("Download error:", error);
-			return res
-				.status(500)
-				.json({
-					message: "Error downloading file",
-					error: error instanceof Error ? error.message : "Unknown error",
-				});
+			return res.status(500).json({
+				message: "Error downloading file",
+				error: error instanceof Error ? error.message : "Unknown error",
+			});
 		}
 	});
 
