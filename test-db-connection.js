@@ -4,11 +4,8 @@
 import "dotenv/config";
 import { Pool } from "pg";
 
-console.log("Testing database connection...");
-console.log(
-	"DATABASE_URL:",
-	process.env.DATABASE_URL ? "Loaded from environment" : "Not found"
-);
+
+
 
 if (!process.env.DATABASE_URL) {
 	console.error("ERROR: DATABASE_URL environment variable is not defined");
