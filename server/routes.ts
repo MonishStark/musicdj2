@@ -23,6 +23,84 @@ if (!fs.existsSync(resultDir)) {
 	fs.mkdirSync(resultDir);
 }
 
+// Security: Define allowed directories for file operations
+const ALLOWED_DIRECTORIES = [path.resolve(uploadsDir), path.resolve(resultDir)];
+
+// Security: Allowed file extensions
+const ALLOWED_EXTENSIONS = [".mp3", ".wav", ".flac", ".aiff"];
+
+/**
+ * Security function to validate and sanitize file paths
+ * @param filePath - The file path to validate
+ * @returns Sanitized path if valid, null if invalid
+ */
+function validateAndSanitizePath(filePath: string): string | null {
+	try {
+		// Resolve the absolute path to prevent traversal
+		const resolvedPath = path.resolve(filePath);
+
+		// Check if the resolved path is within allowed directories
+		const isInAllowedDirectory = ALLOWED_DIRECTORIES.some(
+			(allowedDir) =>
+				resolvedPath.startsWith(allowedDir + path.sep) ||
+				resolvedPath === allowedDir
+		);
+
+		if (!isInAllowedDirectory) {
+			return null;
+		}
+
+		// Check file extension
+		const fileExtension = path.extname(resolvedPath).toLowerCase();
+		if (!ALLOWED_EXTENSIONS.includes(fileExtension)) {
+			return null;
+		}
+
+		// Additional security checks
+		if (resolvedPath.includes("..") || resolvedPath.includes("~")) {
+			return null;
+		}
+
+		return resolvedPath;
+	} catch (error) {
+		return null;
+	}
+}
+
+/**
+ * Security function to create safe output paths
+ * @param baseDir - Base directory (must be in allowed directories)
+ * @param filename - Filename to create
+ * @returns Safe path or null if invalid
+ */
+function createSafeOutputPath(
+	baseDir: string,
+	filename: string
+): string | null {
+	try {
+		// Sanitize filename - remove any path separators and dangerous characters
+		const sanitizedFilename = filename.replace(/[\/\\:*?"<>|]/g, "_");
+
+		// Ensure baseDir is allowed
+		const resolvedBaseDir = path.resolve(baseDir);
+		const isAllowedBaseDir = ALLOWED_DIRECTORIES.some((allowedDir) =>
+			resolvedBaseDir.startsWith(allowedDir)
+		);
+
+		if (!isAllowedBaseDir) {
+			return null;
+		}
+
+		// Create the output path
+		const outputPath = path.join(resolvedBaseDir, sanitizedFilename);
+
+		// Validate the final path
+		return validateAndSanitizePath(outputPath);
+	} catch (error) {
+		return null;
+	}
+}
+
 const storage_config = multer.diskStorage({
 	destination: function (req, file, cb) {
 		cb(null, uploadsDir);
@@ -111,9 +189,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 					return res.status(400).json({ message: "No file uploaded" });
 				}
 
+				// Security: Validate uploaded file path
+				const safeUploadPath = validateAndSanitizePath(req.file.path);
+				if (!safeUploadPath) {
+					// Clean up unsafe file
+					if (fs.existsSync(req.file.path)) {
+						fs.unlinkSync(req.file.path);
+					}
+					return res.status(400).json({
+						message: "Invalid upload path - file rejected",
+					});
+				}
+
 				const track = await storage.createAudioTrack({
 					originalFilename: req.file.originalname,
-					originalPath: req.file.path,
+					originalPath: safeUploadPath,
 					userId: demoUser.id, // Using demo user for now
 				});
 
@@ -123,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 					pythonPath: process.platform === "win32" ? "python" : "python3",
 					pythonOptions: ["-u"],
 					scriptPath: path.join(process.cwd(), "server"),
-					args: [req.file.path],
+					args: [safeUploadPath],
 				};
 
 				PythonShell.run("utils.py", options)
@@ -199,13 +289,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 			// Delete files
 			for (const track of tracks) {
-				if (fs.existsSync(track.originalPath)) {
-					fs.unlinkSync(track.originalPath);
+				// Security: Validate original path before deletion
+				const safeOriginalPath = validateAndSanitizePath(track.originalPath);
+				if (safeOriginalPath && fs.existsSync(safeOriginalPath)) {
+					fs.unlinkSync(safeOriginalPath);
 				}
-				if (track.extendedPaths) {
-					for (const path of track.extendedPaths) {
-						if (fs.existsSync(path)) {
-							fs.unlinkSync(path);
+
+				// Security: Validate extended paths before deletion
+				if (Array.isArray(track.extendedPaths)) {
+					for (const filePath of track.extendedPaths) {
+						const safePath = validateAndSanitizePath(filePath as string);
+						if (safePath && fs.existsSync(safePath)) {
+							fs.unlinkSync(safePath);
 						}
 					}
 				}
@@ -249,7 +344,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 			// Update track status and settings
 			await storage.updateAudioTrack(id, {
-				status: track.extendedPaths?.length ? "regenerate" : "processing",
+				status:
+					Array.isArray(track.extendedPaths) && track.extendedPaths.length > 0
+						? "regenerate"
+						: "processing",
 				settings: settings,
 			});
 
@@ -259,11 +357,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 				path.extname(track.originalFilename)
 			);
 			const fileExt = path.extname(track.originalFilename);
-			const version = track.extendedPaths?.length || 0;
-			const outputPath = path.join(
-				resultDir,
-				`${outputBase}_extended_v${version + 1}${fileExt}`
-			);
+			const version = Array.isArray(track.extendedPaths)
+				? track.extendedPaths.length
+				: 0;
+
+			// Security: Create safe output path using sanitized filename
+			const safeFilename = `${outputBase}_extended_v${version + 1}${fileExt}`;
+			const outputPath = createSafeOutputPath(resultDir, safeFilename);
+
+			if (!outputPath) {
+				return res.status(400).json({
+					message: "Invalid output path - unable to create safe file path",
+				});
+			}
 
 			// Execute the Python script for audio processing
 			const options = {
@@ -318,8 +424,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 							// Update track with completed status and add new version
 							const track = await storage.getAudioTrack(id);
-							const currentPaths = track?.extendedPaths || [];
-							const currentDurations = track?.extendedDurations || [];
+							if (!track) {
+								throw new Error("Track not found after processing");
+							}
+
+							const currentPaths = Array.isArray(track.extendedPaths)
+								? track.extendedPaths
+								: [];
+							const currentDurations = Array.isArray(track.extendedDurations)
+								? track.extendedDurations
+								: [];
 							let extendedPaths = [...currentPaths, outputPath];
 							console.log("extendedPaths:", extendedPaths);
 
@@ -401,25 +515,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 					.json({ message: `${type} audio file not found` });
 			}
 
-			// Security: Validate file path contains only safe characters and extensions
-			const allowedExtensions = [".mp3", ".wav", ".flac", ".aiff"];
-			const fileExtension = path.extname(filePath).toLowerCase();
-			if (!allowedExtensions.includes(fileExtension)) {
-				return res.status(400).json({ message: "Invalid file type" });
+			// Security: Validate and sanitize the file path
+			const safePath = validateAndSanitizePath(filePath);
+			if (!safePath) {
+				return res.status(400).json({
+					message: "Invalid file path - path validation failed",
+				});
 			}
 
-			// Security: Prevent path traversal attempts
-			if (filePath.includes("..") || filePath.includes("~")) {
-				return res.status(400).json({ message: "Invalid file path" });
-			}
-
-			if (!fs.existsSync(filePath)) {
+			if (!fs.existsSync(safePath)) {
 				return res
 					.status(404)
 					.json({ message: "Audio file not found on disk" });
 			}
 
-			const stat = fs.statSync(filePath);
+			const stat = fs.statSync(safePath);
 			const fileSize = stat.size;
 			const range = req.headers.range;
 
@@ -428,7 +538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 				const start = parseInt(parts[0], 10);
 				const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
 				const chunksize = end - start + 1;
-				const file = fs.createReadStream(filePath, { start, end });
+				const file = fs.createReadStream(safePath, { start, end });
 				const head = {
 					"Content-Range": `bytes ${start}-${end}/${fileSize}`,
 					"Accept-Ranges": "bytes",
@@ -443,7 +553,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 					"Content-Type": "audio/mpeg",
 				};
 				res.writeHead(200, head);
-				fs.createReadStream(filePath).pipe(res);
+				fs.createReadStream(safePath).pipe(res);
 			}
 		} catch (error) {
 			console.error("Stream audio error:", error);
@@ -478,19 +588,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 			const filePath = extendedPaths[version];
 
-			// Security: Validate file path contains only safe characters and extensions
-			const allowedExtensions = [".mp3", ".wav", ".flac", ".aiff"];
-			const fileExtension = path.extname(filePath).toLowerCase();
-			if (!allowedExtensions.includes(fileExtension)) {
-				return res.status(400).json({ message: "Invalid file type" });
+			// Security: Validate and sanitize the file path
+			const safePath = validateAndSanitizePath(filePath);
+			if (!safePath) {
+				return res.status(400).json({
+					message: "Invalid file path - path validation failed",
+				});
 			}
 
-			// Security: Prevent path traversal attempts
-			if (filePath.includes("..") || filePath.includes("~")) {
-				return res.status(400).json({ message: "Invalid file path" });
-			}
-
-			if (!fs.existsSync(filePath)) {
+			if (!fs.existsSync(safePath)) {
 				return res
 					.status(404)
 					.json({ message: "Extended audio file not found on disk" });
@@ -507,7 +613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 				version + 1
 			}${path.extname(track.originalFilename)}`;
 
-			res.download(filePath, downloadFilename);
+			res.download(safePath, downloadFilename);
 		} catch (error) {
 			console.error("Download error:", error);
 			return res.status(500).json({
