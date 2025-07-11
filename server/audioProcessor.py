@@ -39,8 +39,12 @@ def install_package(package):
             [sys.executable, "-m", "pip", "install", package])
         logger.info("Successfully installed %s", package)
     except Exception as e:
-        logger.error("Failed to install %s: %s", package, str(e))
-        raise
+        # Detailed logging for server-side debugging
+        logger.error("Failed to install package %s: %s", package, str(e))
+        logger.error("Installation command: %s", [sys.executable, "-m", "pip", "install", package])
+        logger.error("Exception type: %s", type(e).__name__)
+        # Re-raise with generic message for client
+        raise RuntimeError("Package installation failed")
 
 
 try:
@@ -76,7 +80,10 @@ def detect_tempo_and_beats(audio_path, method="auto"):
                     "Librosa beat detection failed, but was explicitly requested")
                 return None, None
         except Exception as e:
+            # Detailed logging for server-side debugging
             logger.error("Error in librosa beat detection: %s", str(e))
+            logger.error("Audio path: %s", audio_path)
+            logger.error("Exception type: %s", type(e).__name__)
             if method == "librosa":
                 return None, None
 
@@ -94,9 +101,12 @@ def detect_tempo_and_beats(audio_path, method="auto"):
                 "Madmom detected tempo: %s BPM with %s beats", tempo, len(beats))
             return tempo, beats
         except Exception as e:
+            # Detailed logging for server-side debugging
             logger.error("Error in madmom beat detection: %s", str(e))
+            logger.error("Audio path: %s", audio_path)
+            logger.error("Exception type: %s", type(e).__name__)
 
-    logger.warning("Beat detection failed with all methods")
+    logger.warning("Beat detection failed with all methods for audio: %s", audio_path)
     return None, None
 
 
@@ -127,7 +137,11 @@ def separate_audio_components(audio_path, output_dir):
         return [components, main_song]
 
     except Exception as e:
+        # Detailed logging for server-side debugging
         logger.error("Error during audio separation: %s", str(e))
+        logger.error("Audio path: %s", audio_path)
+        logger.error("Output directory: %s", output_dir)
+        logger.error("Exception type: %s", type(e).__name__)
         return None
 
 
@@ -208,27 +222,26 @@ def create_extended_mix(components, output_path, intro_bars, outro_bars, _preser
         logger.info(
             "Extended mix created successfully and saved to %s", output_path)
 
-        output_base = os.path.splitext(os.path.basename(output_path))[0]
-        save_dir = r"C:\Users\Dhanush\Desktop\softwareLabs"
-        os.makedirs(save_dir, exist_ok=True)
-        shuffle_json_path = os.path.join(
-            save_dir, f"{output_base}_shuffle_order.json")
-        shuffle_info = {
-            "intro_shuffle_order": shuffled_intro_order
-        }
-
-        with open(shuffle_json_path, 'w') as f:
-            json.dump(shuffle_info, f, indent=2)
-
-        logger.info("Shuffle order saved to %s", shuffle_json_path)
         return True
 
     except Exception as e:
+        # Detailed logging for server-side debugging
         logger.error("Error in create_extended_mix: %s", str(e))
+        logger.error("Failed to create extended mix for output_path: %s", output_path)
+        logger.error("Exception type: %s", type(e).__name__)
+        # Return generic error for client
         return False
 
 
 def process_audio(input_path, output_path, intro_bars=16, outro_bars=16, preserve_vocals=True, beat_detection="auto"):
+    """
+    Process audio file to create extended mix.
+    
+    Error Handling:
+    - Detailed error information is logged server-side for debugging
+    - Generic error responses are returned to client to prevent information disclosure
+    - Function returns boolean success/failure status
+    """
 
     logger.info("Starting audio processing: %s", input_path)
     logger.info(
@@ -269,7 +282,13 @@ def process_audio(input_path, output_path, intro_bars=16, outro_bars=16, preserv
             return success
 
     except Exception as e:
+        # Detailed logging for server-side debugging
         logger.error("Error in audio processing: %s", str(e))
+        logger.error("Failed processing input_path: %s, output_path: %s", input_path, output_path)
+        logger.error("Parameters: intro_bars=%s, outro_bars=%s, preserve_vocals=%s, beat_detection=%s", 
+                    intro_bars, outro_bars, preserve_vocals, beat_detection)
+        logger.error("Exception type: %s", type(e).__name__)
+        # Return generic error for client
         return False
 
 
@@ -292,11 +311,13 @@ def main():
                             audio_outro_bars, audio_preserve_vocals, audio_beat_detection)
 
     if processing_success:
+        # Return success with minimal information
         print(json.dumps({"status": "success", "output_path": audio_output_path}))
         sys.exit(0)
     else:
+        # Generic error message for client - detailed logs are in server logs
         print(json.dumps(
-            {"status": "error", "message": "Failed to process audio"}))
+            {"status": "error", "message": "Audio processing failed"}))
         sys.exit(1)
 
 

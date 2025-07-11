@@ -234,15 +234,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 						}
 					})
 					.catch((err) => {
+						// Detailed server-side logging
 						console.error("Error analyzing audio:", err);
+						console.error("Audio file path:", req.file?.path);
+						console.error("Python script: utils.py");
+						console.error(
+							"Error type:",
+							err instanceof Error ? err.constructor.name : typeof err
+						);
+						// Continue without failing - client will get track without detailed info
 					});
 
 				return res.status(201).json(track);
 			} catch (error) {
+				// Detailed logging for server-side debugging
 				console.error("Upload error:", error);
+				console.error(
+					"File details:",
+					req.file
+						? {
+								originalname: req.file.originalname,
+								mimetype: req.file.mimetype,
+								size: req.file.size,
+						  }
+						: "No file"
+				);
+				console.error(
+					"Error type:",
+					error instanceof Error ? error.constructor.name : typeof error
+				);
+
+				// Generic error message for client
 				return res
 					.status(500)
-					.json({ message: "Error uploading file", error: error.message });
+					.json({ message: "Upload failed. Please try again." });
 			}
 		}
 	);
@@ -262,10 +287,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 			return res.json(track);
 		} catch (error) {
+			// Detailed logging for server-side debugging
 			console.error("Get track error:", error);
+			console.error("Requested track ID:", req.params.id);
+			console.error(
+				"Error type:",
+				error instanceof Error ? error.constructor.name : typeof error
+			);
+
+			// Generic error message for client
 			return res
 				.status(500)
-				.json({ message: "Error retrieving track", error: error.message });
+				.json({ message: "Unable to retrieve track information" });
 		}
 	});
 
@@ -275,10 +308,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 			const tracks = await storage.getAudioTracksByUserId(demoUser.id);
 			return res.json(tracks);
 		} catch (error) {
+			// Detailed logging for server-side debugging
 			console.error("Get tracks error:", error);
-			return res
-				.status(500)
-				.json({ message: "Error retrieving tracks", error: error.message });
+			console.error("User ID:", demoUser.id);
+			console.error(
+				"Error type:",
+				error instanceof Error ? error.constructor.name : typeof error
+			);
+
+			// Generic error message for client
+			return res.status(500).json({ message: "Unable to retrieve tracks" });
 		}
 	});
 
@@ -311,10 +350,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 			return res.json({ message: "All tracks cleared" });
 		} catch (error) {
+			// Detailed logging for server-side debugging
 			console.error("Clear tracks error:", error);
-			return res
-				.status(500)
-				.json({ message: "Error clearing tracks", error: error.message });
+			console.error("User ID:", demoUser.id);
+			console.error(
+				"Error type:",
+				error instanceof Error ? error.constructor.name : typeof error
+			);
+
+			// Generic error message for client
+			return res.status(500).json({ message: "Unable to clear tracks" });
 		}
 	});
 
@@ -446,17 +491,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 						}
 					);
 				})
-				.catch(async (error) => {
+				.catch(async (error: any) => {
+					// Detailed server-side logging
 					console.error("Processing error:", error);
+					console.error("Track ID:", id);
+					console.error("Python script: audioProcessor.py");
+					console.error(
+						"Error type:",
+						error instanceof Error ? error.constructor.name : typeof error
+					);
+
+					// Update track status for client
 					await storage.updateAudioTrack(id, {
 						status: "error",
 					});
 				});
 		} catch (error) {
+			// Detailed logging for server-side debugging
 			console.error("Process track error:", error);
-			return res
-				.status(500)
-				.json({ message: "Error processing track", error: error.message });
+			console.error("Track ID:", req.params.id);
+			console.error("Request body:", req.body);
+			console.error(
+				"Error type:",
+				error instanceof Error ? error.constructor.name : typeof error
+			);
+
+			// Generic error message for client
+			return res.status(500).json({ message: "Audio processing failed" });
 		}
 	});
 
@@ -475,10 +536,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 			return res.json({ status: track.status });
 		} catch (error) {
+			// Detailed logging for server-side debugging
 			console.error("Get status error:", error);
+			console.error("Track ID:", req.params.id);
+			console.error(
+				"Error type:",
+				error instanceof Error ? error.constructor.name : typeof error
+			);
+
+			// Generic error message for client
 			return res
 				.status(500)
-				.json({ message: "Error retrieving status", error: error.message });
+				.json({ message: "Unable to retrieve track status" });
 		}
 	});
 
@@ -556,10 +625,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 				fs.createReadStream(safePath).pipe(res);
 			}
 		} catch (error) {
+			// Detailed logging for server-side debugging
 			console.error("Stream audio error:", error);
+			console.error("Track ID:", req.params.id);
+			console.error("Audio type:", req.params.type);
+			console.error("Version:", req.query.version);
+			console.error(
+				"Error type:",
+				error instanceof Error ? error.constructor.name : typeof error
+			);
+
+			// Generic error message for client
 			return res.status(500).json({
-				message: "Error streaming audio",
-				error: error instanceof Error ? error.message : "Unknown error",
+				message: "Unable to stream audio file",
 			});
 		}
 	});
@@ -615,10 +693,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 			res.download(safePath, downloadFilename);
 		} catch (error) {
+			// Detailed logging for server-side debugging
 			console.error("Download error:", error);
+			console.error("Track ID:", req.params.id);
+			console.error("Version:", req.query.version);
+			console.error(
+				"Error type:",
+				error instanceof Error ? error.constructor.name : typeof error
+			);
+
+			// Generic error message for client
 			return res.status(500).json({
-				message: "Error downloading file",
-				error: error instanceof Error ? error.message : "Unknown error",
+				message: "Download failed",
 			});
 		}
 	});

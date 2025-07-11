@@ -94,7 +94,13 @@ def analyze_audio_file(file_path):
         return info
 
     except Exception as error:
+        # Detailed logging for server-side debugging
         logger.error("Error analyzing audio file: %s", str(error))
+        logger.error("File path: %s", file_path)
+        logger.error("Exception type: %s", type(error).__name__)
+        logger.error("Stack trace:", exc_info=True)
+        
+        # Use fallback analysis for client
         return fallback_audio_analysis(file_path)
 
 
@@ -112,8 +118,12 @@ def fallback_audio_analysis(file_path):
         }
 
     except Exception as error:
+        # Detailed logging for server-side debugging
         logger.error("Fallback analysis failed: %s", str(error))
-
+        logger.error("File path: %s", file_path)
+        logger.error("Exception type: %s", type(error).__name__)
+        
+        # Return minimal fallback data for client
         return {
             "format": get_audio_format(file_path),
             "duration": 0,
@@ -129,13 +139,15 @@ def is_valid_filepath(file_path):
 
 def main():
     if len(sys.argv) < 2:
-        print(json.dumps({"error": "No file path provided"}))
+        # Generic error for client
+        print(json.dumps({"error": "Invalid request"}))
         sys.exit(1)
 
     file_path = sys.argv[1]
 
     if not is_valid_filepath(file_path):
-        print(json.dumps({"error": f"File not found: {file_path}"}))
+        # Generic error for client - detailed logging done in analyze_audio_file
+        print(json.dumps({"error": "File processing failed"}))
         sys.exit(1)
 
     info = analyze_audio_file(file_path)
